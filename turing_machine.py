@@ -64,10 +64,27 @@ def description_tape_init(actions):
         for element in action:
             description_tape += element + "0"
         description_tape += "0"
-    description_tape = description_tape[:-2]
-    return description_tape
+    
+    return description_tape[:-2]
 
-print(description_tape_init(convert_to_unary(parse_turing_machine("./test.txt"))['actions']))
+
+TM = convert_to_unary(parse_turing_machine("./test.txt"))
+print("description tape: ",description_tape_init(TM['actions']))
+
+def state_tape_init(states,start_state, final_states):
+    state_tape = start_state + "0"
+    for state in states:
+        if state == start_state or state == final_states:
+            continue
+        state_tape += state + "0"
+    state_tape += "0"
+    for state in final_states:
+        state_tape += state
+    
+    return state_tape[:-1]
+
+
+print("state tape:", state_tape_init(TM['states'], TM['start_state'], TM['final_states']))
 
 
 class UTM():
