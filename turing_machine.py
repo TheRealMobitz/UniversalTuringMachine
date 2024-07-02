@@ -15,6 +15,8 @@ def parse_turing_machine(file_path):
     for action in actions:
         alphabet.add(action[1])
         alphabet.add(action[2])
+
+    alphabet = sorted(list(alphabet))
     print('alph=',alphabet)
 
     turing_machine = {
@@ -52,7 +54,26 @@ def convert_to_unary(turing_machine):
         'final_states': final_states_unary,
         'actions': actions_unary
     }
-    
     return unary_turing_machine
 
 print(convert_to_unary(parse_turing_machine("./test.txt")))
+
+def description_tape_init(actions):
+    description_tape = ""
+    for action in actions:
+        for element in action:
+            description_tape += element + "0"
+        description_tape += "0"
+    description_tape = description_tape[:-2]
+    return description_tape
+
+print(description_tape_init(convert_to_unary(parse_turing_machine("./test.txt"))['actions']))
+
+
+class UTM():
+    def __init__(self, start_state, final_states, description_tape, content_tape, state_tape):
+        self.start_state = start_state
+        self.final_states = final_states
+        self.description_tape = description_tape
+        self.content_tape = content_tape
+        self.state_tape = state_tape
