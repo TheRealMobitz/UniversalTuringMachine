@@ -1,4 +1,5 @@
 import re
+import time
 
 def parse_turing_machine(file_path):
     with open(file_path, 'r') as file:
@@ -15,9 +16,10 @@ def parse_turing_machine(file_path):
     for action in actions:
         alphabet.add(action[1])
         alphabet.add(action[2])
-
     alphabet = sorted(list(alphabet))
-    print('alph=',alphabet)
+    for i in range(0,len(alphabet)): 
+        if alphabet[i] == "blank":
+            alphabet[0], alphabet[i] = alphabet[i], alphabet[0]
 
     turing_machine = {
         'states': states,
@@ -29,11 +31,9 @@ def parse_turing_machine(file_path):
 
     return turing_machine
 
-print (parse_turing_machine("./test.txt"))
-
 def convert_to_unary(turing_machine):
     state_mapping = {state: '1' * (i + 1) for i, state in enumerate(turing_machine['states'])}
-    alphabet_mapping = {alphabet: '1' * (i+1) for i, alphabet in enumerate(turing_machine['alphabet'])}
+    alphabet_mapping = {alphabet: '1' * (i + 1) for i, alphabet in enumerate(turing_machine['alphabet'])}
     
     start_state_unary = state_mapping[turing_machine['start_state']]
     final_states_unary = [state_mapping[state] for state in turing_machine['final_states']]
@@ -52,11 +52,10 @@ def convert_to_unary(turing_machine):
         'states': list(state_mapping.values()),
         'start_state': start_state_unary,
         'final_states': final_states_unary,
-        'actions': actions_unary
+        'actions': actions_unary,
+        'reverse_alphabet_mapping': {v: k for k, v in alphabet_mapping.items()}  # Reverse mapping for decoding
     }
     return unary_turing_machine
-
-print(convert_to_unary(parse_turing_machine("./test.txt")))
 
 def description_tape_init(actions):
     description_tape = ""
@@ -67,14 +66,10 @@ def description_tape_init(actions):
     
     return description_tape[:-2]
 
-
-TM = convert_to_unary(parse_turing_machine("./test.txt"))
-print("description tape: ",description_tape_init(TM['actions']))
-
-def state_tape_init(states,start_state, final_states):
+def state_tape_init(states, start_state, final_states):
     state_tape = start_state + "0"
     for state in states:
-        if state == start_state or state == final_states:
+        if state == start_state or state in final_states:
             continue
         state_tape += state + "0"
     state_tape += "0"
@@ -83,29 +78,25 @@ def state_tape_init(states,start_state, final_states):
     
     return state_tape
 
-
-print("state tape:", state_tape_init(TM['states'], TM['start_state'], TM['final_states']))
-
-
 class UTM():
-    def __init__(self, start_state, final_states, description_tape, content_tape, state_tape):
+    def __init__(self, start_state, final_states, description_tape, content_tape, state_tape, reverse_alphabet_mapping):
         self.start_state = start_state
         self.final_states = final_states
         self.description_tape = description_tape
         self.content_tape = content_tape
         self.state_tape = state_tape
         self.state_index = 0
-
+        self.reverse_alphabet_mapping = reverse_alphabet_mapping
 
     def run_turing_machine(self, index_content_tape):
         current_state = self.calculate_current_state()
         current_content = self.calculate_current_content(index_content_tape)
-        i=0
-        print(f"content tape before change: \n{self.content_tape}")
-        print(index_content_tape*" " +"^")
-        while i < len(description_tape):
+        i = 0
+        print(f"content tape before change: \n{self.decode_content_tape()}")
+        print(index_content_tape * " " + "^")
+        while i < len(self.description_tape):
             print(f"description tape: \n{self.description_tape}")
-            print(i*" " +"^")
+            print(i * " " + "^")
             state = ""
             next_state = ""
             input = ""
@@ -113,119 +104,180 @@ class UTM():
             direction = ""
             while self.description_tape[i] == "1":
                 state += "1"
-                i+=1
-            i+=1
+                i += 1
+            i += 1
             while self.description_tape[i] == "1":
                 input += "1"
-                i+=1
-            i+=1
+                i += 1
+            i += 1
             while self.description_tape[i] == "1":
                 output += "1"
-                i+=1
-            i+=1
+                i += 1
+            i += 1
             while self.description_tape[i] == "1":
                 direction += "1"
-                i+=1
-            i+=1
+                i += 1
+            i += 1
             while i < len(self.description_tape) and self.description_tape[i] == "1":
                 next_state += "1"
-                i+=1
+                i += 1
             if i < len(self.description_tape): 
-                i+=2
-            # print(f"state: {state} next: {next_state}")
-            # print(f"input: {input} output: {output}")
-            # print(f"current state: {current_state} current input: {current_content}")
-            
+                i += 2
             if state == current_state and input == current_content:
                 self.change_current_state(next_state)
                 self.change_current_content(output, index_content_tape)
                 index_content_tape = self.apply_direction(direction, index_content_tape)
-                # print(f"state index: {self.state_index}")
-                # print(f"content index: {index_content_tape}")
-                # print(f"description index: {i}")
-                print(f"content tape after change: \n{self.content_tape}")
-                print(index_content_tape*" " +"^")
+                print(f"content tape after change: \n{self.decode_content_tape()}")
+                print(index_content_tape * " " + "^")
                 return self.run_turing_machine(index_content_tape)
-        # print(self.content_tape)
         return self.halt(current_state)
 
-    def halt(self,current_state):
-        i = len(self.state_tape)-1
-        while True:
+    def halt(self, current_state):
+        i = len(self.state_tape) - 1
+        while i >= 0:
             final_state = ""
-            while self.state_tape[i] != "0":
+            while i >= 0 and self.state_tape[i] != "0":
                 print(f"state tape: \n{self.state_tape}")
-                print(i*" " +"^")
+                print(i * " " + "^")
                 final_state += "1"
                 i -= 1
-            i-=1
-            print("final state: "+final_state)
+            i -= 1
             if current_state == final_state:
                 return 1
-            if self.state_tape[i] == "0":
-                return 0
-        
+            if i >= 0 and self.state_tape[i] == "0":
+                i -= 1
+        return 0
+
     def calculate_current_state(self):
         i = 0
         state = ""
-        while self.state_tape[i + self.state_index] != "0":
+        while i + self.state_index < len(self.state_tape) and self.state_tape[i + self.state_index] != "0":
             state += "1"
             i += 1
-        print("calculate current state: "+state)
         return state
     
     def calculate_current_content(self, index_content_tape):
         content = ""
         i = 0
-        while self.content_tape[i + index_content_tape] != "0":
+        while i + index_content_tape < len(self.content_tape) and self.content_tape[i + index_content_tape] != "0":
             content += "1"
-            i +=1
-        print("calculate current content: "+content)
+            i += 1
         return content
 
     def change_current_state(self, next_state):
         i = 0
-        while True:
+        while i < len(self.state_tape):
             state = ""
-            while self.state_tape[i] != "0":
+            while i < len(self.state_tape) and self.state_tape[i] != "0":
                 state += "1"
                 i += 1
             i += 1
-            # print(f"state is {state} and next is : {next_state}")
-            if(next_state == state):
+            if next_state == state:
                 break
+        else:
+            raise ValueError(f"Next state {next_state} not found in state tape")
         i -= 2
-        while self.state_tape[i] != "0" and i>0:
-                i -= 1
-        if i >0:
+        while self.state_tape[i] != "0" and i > 0:
+            i -= 1
+        if i > 0:
             i += 1
         self.state_index = i
-    
+
     def change_current_content(self, output, index_content_tape):
         index_end_content_tape = index_content_tape
-        while self.content_tape[index_end_content_tape] != "0":
+        while index_end_content_tape < len(self.content_tape) and self.content_tape[index_end_content_tape] != "0":
             index_end_content_tape += 1
         self.content_tape = self.content_tape[:index_content_tape] + output + self.content_tape[index_end_content_tape:]
 
-    def apply_direction(self,direction,index_content_tape):
-        if direction=='1' : #R
-            while self.content_tape[index_content_tape] != "0" and index_content_tape < len(self.content_tape):
+    def apply_direction(self, direction, index_content_tape):
+        if direction == '1':  # R
+            while index_content_tape < len(self.content_tape) and self.content_tape[index_content_tape] != "0":
                 index_content_tape += 1
-            # TODO: need some condition here for overloading
             index_content_tape += 1
-        else: #L
-            index_content_tape -= 2
-            while self.content_tape[index_content_tape] != "0" and index_content_tape > 0:
-                index_content_tape -= 1
-            if index_content_tape != 0:
-                index_content_tape += 1
-            # TODO: need some condition here for overloading
+            if index_content_tape >= len(self.content_tape):
+                self.content_tape += "01"  # Extend the tape with a blank
+        else:  # L
+            if index_content_tape == 0:
+                self.content_tape = "10" + self.content_tape  # Extend the tape with a blank
+            else:
+                index_content_tape -= 2
+                while index_content_tape >= 0 and self.content_tape[index_content_tape] != "0":
+                    index_content_tape -= 1
+                if index_content_tape != 0:
+                    index_content_tape += 1
         return index_content_tape
 
+    def decode_content_tape(self):
+        decoded_content = ""
+        i = 0
+        while i < len(self.content_tape):
+            symbol = ""
+            while i < len(self.content_tape) and self.content_tape[i] == "1":
+                symbol += "1"
+                i += 1
+            if symbol:
+                decoded_content += self.reverse_alphabet_mapping.get(symbol, "?")
+            if i < len(self.content_tape) and self.content_tape[i] == "0":
+                decoded_content += " "
+            i += 1
+        return decoded_content.strip()
+
+def display_step(description_tape, description_index, state_tape, state_index, content_tape, content_index, decoded_content):
+    print("\nDescription Tape:\n" + description_tape)
+    print(" " * description_index + "^")
+    print("\nState Tape:\n" + state_tape)
+    print(" " * state_index + "^")
+    print("\nContent Tape:\n" + content_tape)
+    print(" " * content_index + "^")
+    print("\nDecoded Content Tape:\n" + decoded_content)
+    time.sleep(1)  # Pause for 1 second for animation effect
+
+def run_turing_machine_with_steps(utm, index_content_tape):
+    current_state = utm.calculate_current_state()
+    current_content = utm.calculate_current_content(index_content_tape)
+    i = 0
+    decoded_content = utm.decode_content_tape()
+    display_step(utm.description_tape, i, utm.state_tape, utm.state_index, utm.content_tape, index_content_tape, decoded_content)
+    while i < len(utm.description_tape):
+        state = ""
+        next_state = ""
+        input = ""
+        output = ""
+        direction = ""
+        while i < len(utm.description_tape) and utm.description_tape[i] == "1":
+            state += "1"
+            i += 1
+        i += 1
+        while i < len(utm.description_tape) and utm.description_tape[i] == "1":
+            input += "1"
+            i += 1
+        i += 1
+        while i < len(utm.description_tape) and utm.description_tape[i] == "1":
+            output += "1"
+            i += 1
+        i += 1
+        while i < len(utm.description_tape) and utm.description_tape[i] == "1":
+            direction += "1"
+            i += 1
+        i += 1
+        while i < len(utm.description_tape) and utm.description_tape[i] == "1":
+            next_state += "1"
+            i += 1
+        if i < len(utm.description_tape):
+            i += 2
+        if state == current_state and input == current_content:
+            utm.change_current_state(next_state)
+            utm.change_current_content(output, index_content_tape)
+            index_content_tape = utm.apply_direction(direction, index_content_tape)
+            decoded_content = utm.decode_content_tape()
+            display_step(utm.description_tape, i, utm.state_tape, utm.state_index, utm.content_tape, index_content_tape, decoded_content)
+            return run_turing_machine_with_steps(utm, index_content_tape)
+    return utm.halt(current_state)
+
+TM = convert_to_unary(parse_turing_machine("./test.txt"))
 description_tape = description_tape_init(TM['actions'])
 state_tape = state_tape_init(TM['states'], TM['start_state'], TM['final_states'])
 
-uni = UTM(TM['start_state'],TM['final_states'],description_tape,"110101011011011011",state_tape)
-print(uni.run_turing_machine(3))
-
-# TODO: translate contenet tape
+uni = UTM(TM['start_state'], TM['final_states'], description_tape, "101101101", state_tape, TM['reverse_alphabet_mapping'])
+print(run_turing_machine_with_steps(uni, 2))
+print(parse_turing_machine("./test.txt")['alphabet'])
