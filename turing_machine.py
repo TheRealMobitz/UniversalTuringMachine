@@ -1,5 +1,7 @@
 import re
 import time
+import os
+from termcolor import colored
 
 def parse_turing_machine(file_path):
     with open(file_path, 'r') as file:
@@ -230,14 +232,27 @@ class UTM():
         return decoded_content.strip()
 
 def display_step(description_tape, description_index, state_tape, state_index, content_tape, content_index, decoded_content):
-    print("\nDescription Tape:\n" + description_tape)
-    print(" " * description_index + "^")
-    print("\nState Tape:\n" + state_tape)
-    print(" " * state_index + "^")
-    print("\nContent Tape:\n" + content_tape)
-    print(" " * content_index + "^")
-    print("\nDecoded Content Tape:\n" + decoded_content)
-    time.sleep(1)  # Pause for 1 second for animation effect
+    os.system('cls||clear')
+    print(colored("╔════════════════════════════════════════════════════╗", 'cyan'))
+    print(colored("║                   Description Tape                 ║", 'cyan'))
+    print(colored("╚════════════════════════════════════════════════════╝", 'cyan'))
+    print(description_tape)
+    print(" " * description_index + colored("^", 'cyan'))
+    print(colored("╔════════════════════════════════════════════════════╗", 'green'))
+    print(colored("║                       State Tape                   ║", 'green'))
+    print(colored("╚════════════════════════════════════════════════════╝", 'green'))
+    print(state_tape)
+    print(" " * state_index + colored("^", 'green'))
+    print(colored("╔════════════════════════════════════════════════════╗", 'yellow'))
+    print(colored("║                      Content Tape                  ║", 'yellow'))
+    print(colored("╚════════════════════════════════════════════════════╝", 'yellow'))
+    print(content_tape)
+    print(" " * content_index + colored("^", 'yellow'))
+    print(colored("╔════════════════════════════════════════════════════╗", 'blue'))
+    print(colored("║                  Decoded Content Tape              ║", 'blue'))
+    print(colored("╚════════════════════════════════════════════════════╝", 'blue'))
+    print(colored(decoded_content, 'blue'))
+    time.sleep(0.75) 
 
 def run_turing_machine_with_steps(utm, index_content_tape):
     current_state = utm.calculate_current_state()
@@ -289,3 +304,12 @@ print(content_tape)
 uni = UTM(TM['start_state'], TM['final_states'], description_tape, content_tape, state_tape, TM['reverse_alphabet_mapping'])
 print(run_turing_machine_with_steps(uni, 2))
 print(parse_turing_machine("./multiplication.txt")['alphabet'])
+
+TM2 = convert_to_unary(parse_turing_machine("./addition.txt"))
+description_tape = description_tape_init(TM2['actions'])
+state_tape = state_tape_init(TM2['states'], TM2['start_state'], TM2['final_states'])
+content_tape = content_tape_init("111011",TM2['alphabet_mapping'])
+print(content_tape)
+uni = UTM(TM2['start_state'], TM2['final_states'], description_tape, content_tape, state_tape, TM2['reverse_alphabet_mapping'])
+print(run_turing_machine_with_steps(uni, 2))
+print(parse_turing_machine("./addition.txt")['alphabet'])
