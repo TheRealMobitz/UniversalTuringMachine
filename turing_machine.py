@@ -53,6 +53,7 @@ def convert_to_unary(turing_machine):
         'start_state': start_state_unary,
         'final_states': final_states_unary,
         'actions': actions_unary,
+        'alphabet_mapping': alphabet_mapping,  # mapping for encoding
         'reverse_alphabet_mapping': {v: k for k, v in alphabet_mapping.items()}  # Reverse mapping for decoding
     }
     return unary_turing_machine
@@ -77,6 +78,12 @@ def state_tape_init(states, start_state, final_states):
         state_tape += state
     
     return state_tape
+
+def content_tape_init(content,alphabet):
+    content_tape = ""
+    for element in content:
+        content_tape += alphabet[element] +"0"
+    return "10" + content_tape + "1"
 
 class UTM():
     def __init__(self, start_state, final_states, description_tape, content_tape, state_tape, reverse_alphabet_mapping):
@@ -274,10 +281,11 @@ def run_turing_machine_with_steps(utm, index_content_tape):
             return run_turing_machine_with_steps(utm, index_content_tape)
     return utm.halt(current_state)
 
-TM = convert_to_unary(parse_turing_machine("./test.txt"))
+TM = convert_to_unary(parse_turing_machine("./multiplication.txt"))
 description_tape = description_tape_init(TM['actions'])
 state_tape = state_tape_init(TM['states'], TM['start_state'], TM['final_states'])
-
-uni = UTM(TM['start_state'], TM['final_states'], description_tape, "101101101", state_tape, TM['reverse_alphabet_mapping'])
+content_tape = content_tape_init("111011",TM['alphabet_mapping'])
+print(content_tape)
+uni = UTM(TM['start_state'], TM['final_states'], description_tape, content_tape, state_tape, TM['reverse_alphabet_mapping'])
 print(run_turing_machine_with_steps(uni, 2))
-print(parse_turing_machine("./test.txt")['alphabet'])
+print(parse_turing_machine("./multiplication.txt")['alphabet'])
