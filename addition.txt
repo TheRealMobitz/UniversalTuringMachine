@@ -1,0 +1,4 @@
+    states:{q0,q1,q2,q3,qf}
+    start_state:{q0}
+    final_states:{qf}
+    actions:{(q0,1,1,R,q0),(q0,0,1,R,q1),(q1,1,1,R,q1),(q1,blank,blank,L,q2),(q2,1,blank,L,q3),(q3,1,1,L,q3),(q3,blank,blank,R,qf)} 
